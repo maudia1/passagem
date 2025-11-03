@@ -25,87 +25,91 @@
     </header>
 
     <main class="content">
-      <section class="car">
-        <div class="row front">
-          <button class="seat driver" aria-label="Motorista" disabled>Motorista</button>
-          <button class="seat unpaid" data-seat="1" aria-pressed="false" aria-label="Assento 1">1</button>
-        </div>
-        <div class="row back">
-          <button class="seat unpaid" data-seat="2" aria-pressed="false" aria-label="Assento 2">2</button>
-          <button class="seat unpaid" data-seat="3" aria-pressed="false" aria-label="Assento 3">3</button>
-          <button class="seat unpaid" data-seat="4" aria-pressed="false" aria-label="Assento 4">4</button>
-        </div>
+      <section class="focus-panel">
+        <section class="car">
+          <div class="row front">
+            <button class="seat driver" aria-label="Motorista" disabled>Motorista</button>
+            <button class="seat unpaid" data-seat="1" aria-pressed="false" aria-label="Assento 1">1</button>
+          </div>
+          <div class="row back">
+            <button class="seat unpaid" data-seat="2" aria-pressed="false" aria-label="Assento 2">2</button>
+            <button class="seat unpaid" data-seat="3" aria-pressed="false" aria-label="Assento 3">3</button>
+            <button class="seat unpaid" data-seat="4" aria-pressed="false" aria-label="Assento 4">4</button>
+          </div>
+        </section>
+
+        <section class="legend">
+          <span class="dot paid"></span> Pago
+          <span class="dot unpaid"></span> Pendente
+        </section>
       </section>
 
-      <section class="legend">
-        <span class="dot paid"></span> Pago
-        <span class="dot unpaid"></span> Pendente
-      </section>
+      <section class="info-panel">
+        <section class="passes">
+          <h2>Resumo do mês (passagens)</h2>
+          <div class="summary-grid">
+            <div class="summary-item"><span class="muted">Corridas</span><strong id="runsMonthCount">0</strong></div>
+            <div class="summary-item"><span class="muted">Pagas</span><strong id="runsMonthPaid">0</strong></div>
+            <div class="summary-item"><span class="muted">Total</span><strong id="runsMonthTotal">R$ 0,00</strong></div>
+          </div>
+        </section>
 
-      <section class="passes">
-        <h2>Resumo do mês (passagens)</h2>
-        <div class="summary-grid">
-          <div class="summary-item"><span class="muted">Corridas</span><strong id="runsMonthCount">0</strong></div>
-          <div class="summary-item"><span class="muted">Pagas</span><strong id="runsMonthPaid">0</strong></div>
-          <div class="summary-item"><span class="muted">Total</span><strong id="runsMonthTotal">R$ 0,00</strong></div>
-        </div>
-      </section>
+        <section class="finance">
+          <h2>Financeiro do mês</h2>
+          <div class="summary-grid">
+            <div class="summary-item"><span class="muted">Receita (passagens)</span><strong id="finRevenue">R$ 0,00</strong></div>
+            <div class="summary-item"><span class="muted">Gasto (combustível)</span><strong id="finFuel">R$ 0,00</strong></div>
+            <div class="summary-item"><span class="muted">Saldo</span><strong id="finNet" class="net">R$ 0,00</strong></div>
+          </div>
+        </section>
 
-      <section class="finance">
-        <h2>Financeiro do mês</h2>
-        <div class="summary-grid">
-          <div class="summary-item"><span class="muted">Receita (passagens)</span><strong id="finRevenue">R$ 0,00</strong></div>
-          <div class="summary-item"><span class="muted">Gasto (combustível)</span><strong id="finFuel">R$ 0,00</strong></div>
-          <div class="summary-item"><span class="muted">Saldo</span><strong id="finNet" class="net">R$ 0,00</strong></div>
-        </div>
+        <section class="fuel">
+          <h2>Abastecimento</h2>
+          <div class="fuel-summary">
+            <span class="tag" id="fuelSumMonthTotal">R$ 0,00</span>
+            <span class="tag" id="fuelSumMonthLiters">0,00 L</span>
+            <span class="tag" id="fuelSumMonthAvg">R$ 0,00/L</span>
+          </div>
+          <form id="fuelForm" class="fuel-form">
+            <div class="fuel-grid">
+              <label>
+                Data e hora
+                <input type="datetime-local" id="fuelDate" />
+              </label>
+              <label>
+                Litros
+                <input type="number" id="fuelLiters" step="0.01" min="0" inputmode="decimal" enterkeyhint="next" required />
+              </label>
+              <label>
+                Valor total (R$)
+                <input type="number" id="fuelTotal" step="0.01" min="0" inputmode="decimal" enterkeyhint="next" required />
+              </label>
+              <label>
+                Tipo
+                <select id="fuelType" required>
+                  <option value="gasolina">Gasolina</option>
+                  <option value="etanol">Etanol</option>
+                </select>
+              </label>
+              <label class="full">
+                Observação
+                <input type="text" id="fuelNotes" placeholder="Opcional" autocapitalize="sentences" autocomplete="off" />
+              </label>
+            </div>
+            <div class="fuel-actions">
+              <button class="action save" type="submit">Registrar</button>
+            </div>
+          </form>
+
+          <div class="fuel-list">
+            <h3>Últimos abastecimentos</h3>
+            <ul id="fuelList" class="fuel-items">
+              <li class="muted">Nenhum registro ainda.</li>
+            </ul>
+          </div>
+        </section>
       </section>
     </main>
-
-    <section class="fuel">
-      <h2>Abastecimento</h2>
-      <div class="fuel-summary">
-        <span class="tag" id="fuelSumMonthTotal">R$ 0,00</span>
-        <span class="tag" id="fuelSumMonthLiters">0,00 L</span>
-        <span class="tag" id="fuelSumMonthAvg">R$ 0,00/L</span>
-      </div>
-      <form id="fuelForm" class="fuel-form">
-        <div class="fuel-grid">
-          <label>
-            Data e hora
-            <input type="datetime-local" id="fuelDate" />
-          </label>
-          <label>
-            Litros
-            <input type="number" id="fuelLiters" step="0.01" min="0" inputmode="decimal" enterkeyhint="next" required />
-          </label>
-          <label>
-            Valor total (R$)
-            <input type="number" id="fuelTotal" step="0.01" min="0" inputmode="decimal" enterkeyhint="next" required />
-          </label>
-          <label>
-            Tipo
-            <select id="fuelType" required>
-              <option value="gasolina">Gasolina</option>
-              <option value="etanol">Etanol</option>
-            </select>
-          </label>
-          <label class="full">
-            Observação
-            <input type="text" id="fuelNotes" placeholder="Opcional" autocapitalize="sentences" autocomplete="off" />
-          </label>
-        </div>
-        <div class="fuel-actions">
-          <button class="action save" type="submit">Registrar</button>
-        </div>
-      </form>
-
-      <div class="fuel-list">
-        <h3>Últimos abastecimentos</h3>
-        <ul id="fuelList" class="fuel-items">
-          <li class="muted">Nenhum registro ainda.</li>
-        </ul>
-      </div>
-    </section>
 
     <footer class="footer">
       <span>Carro com 5 lugares (4 de lotação).</span>
