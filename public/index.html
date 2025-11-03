@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Controle de Passagens</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#0f172a" />
+    <link rel="stylesheet" href="styles.css?v=4" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>Controle de Passagens</h1>
+      <div class="status" aria-live="polite">
+        <span id="paidCount" class="badge">0/4 pagas</span>
+        <span id="remainingCount" class="muted">Faltam 4</span>
+        <span id="totalAmount" class="badge">R$ 0,00</span>
+      </div>
+      <div class="top-actions">
+        <button id="newRunBtn" class="reset" title="Registrar corrida e iniciar nova">Novo</button>
+        <button id="resetMonthBtn" class="reset danger" title="Apagar dados do mês atual (corridas e abastecimentos)">Zerar mês</button>
+      </div>
+    </header>
+
+    <main class="content">
+      <section class="car">
+        <div class="row front">
+          <button class="seat driver" aria-label="Motorista" disabled>Motorista</button>
+          <button class="seat unpaid" data-seat="1" aria-pressed="false" aria-label="Assento 1">1</button>
+        </div>
+        <div class="row back">
+          <button class="seat unpaid" data-seat="2" aria-pressed="false" aria-label="Assento 2">2</button>
+          <button class="seat unpaid" data-seat="3" aria-pressed="false" aria-label="Assento 3">3</button>
+          <button class="seat unpaid" data-seat="4" aria-pressed="false" aria-label="Assento 4">4</button>
+        </div>
+      </section>
+
+      <section class="legend">
+        <span class="dot paid"></span> Pago
+        <span class="dot unpaid"></span> Pendente
+      </section>
+
+      <section class="passes">
+        <h2>Resumo do mês (passagens)</h2>
+        <div class="summary-grid">
+          <div class="summary-item"><span class="muted">Corridas</span><strong id="runsMonthCount">0</strong></div>
+          <div class="summary-item"><span class="muted">Pagas</span><strong id="runsMonthPaid">0</strong></div>
+          <div class="summary-item"><span class="muted">Total</span><strong id="runsMonthTotal">R$ 0,00</strong></div>
+        </div>
+      </section>
+
+      <section class="finance">
+        <h2>Financeiro do mês</h2>
+        <div class="summary-grid">
+          <div class="summary-item"><span class="muted">Receita (passagens)</span><strong id="finRevenue">R$ 0,00</strong></div>
+          <div class="summary-item"><span class="muted">Gasto (combustível)</span><strong id="finFuel">R$ 0,00</strong></div>
+          <div class="summary-item"><span class="muted">Saldo</span><strong id="finNet" class="net">R$ 0,00</strong></div>
+        </div>
+      </section>
+    </main>
+
+    <section class="fuel">
+      <h2>Abastecimento</h2>
+      <div class="fuel-summary">
+        <span class="tag" id="fuelSumMonthTotal">R$ 0,00</span>
+        <span class="tag" id="fuelSumMonthLiters">0,00 L</span>
+        <span class="tag" id="fuelSumMonthAvg">R$ 0,00/L</span>
+      </div>
+      <form id="fuelForm" class="fuel-form">
+        <div class="fuel-grid">
+          <label>
+            Data e hora
+            <input type="datetime-local" id="fuelDate" />
+          </label>
+          <label>
+            Litros
+            <input type="number" id="fuelLiters" step="0.01" min="0" inputmode="decimal" enterkeyhint="next" required />
+          </label>
+          <label>
+            Valor total (R$)
+            <input type="number" id="fuelTotal" step="0.01" min="0" inputmode="decimal" enterkeyhint="next" required />
+          </label>
+          <label>
+            Tipo
+            <select id="fuelType" required>
+              <option value="gasolina">Gasolina</option>
+              <option value="etanol">Etanol</option>
+            </select>
+          </label>
+          <label class="full">
+            Observação
+            <input type="text" id="fuelNotes" placeholder="Opcional" autocapitalize="sentences" autocomplete="off" />
+          </label>
+        </div>
+        <div class="fuel-actions">
+          <button class="action save" type="submit">Registrar</button>
+        </div>
+      </form>
+
+      <div class="fuel-list">
+        <h3>Últimos abastecimentos</h3>
+        <ul id="fuelList" class="fuel-items">
+          <li class="muted">Nenhum registro ainda.</li>
+        </ul>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span>Carro com 5 lugares (4 de lotação).</span>
+    </footer>
+
+    <!-- Bottom sheet: forma de pagamento -->
+    <div id="sheetBackdrop" class="backdrop hidden" aria-hidden="true"></div>
+    <div id="paymentSheet" class="sheet hidden" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <h2 id="sheetTitle">Forma de pagamento</h2>
+      <div class="sheet-actions">
+        <button class="action pix" data-method="pix" aria-label="Marcar como pago via PIX">
+          PIX
+        </button>
+        <button class="action cash" data-method="dinheiro" aria-label="Marcar como pago em dinheiro">
+          Dinheiro
+        </button>
+        <button class="action pending" data-method="pendente" aria-label="Marcar como pendente">
+          Marcar como pendente
+        </button>
+      </div>
+      <button class="sheet-cancel" id="sheetCancel">Cancelar</button>
+    </div>
+
+    <!-- Supabase JS SDK -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2" defer></script>
+    <script src="script.js?v=4" defer></script>
+  </body>
+  </html>
