@@ -14,33 +14,11 @@
     <header class="topbar">
       <div class="topbar-inner">
         <div class="topbar-info">
-          <span class="eyebrow">Painel do motorista</span>
           <h1>Controle de Passagens</h1>
-          <p class="muted large">Organize corridas, pagamentos e abastecimentos com clareza e velocidade em um só lugar.</p>
+          <p class="muted large">Toque no assento para marcar quem já pagou a corrida.</p>
           <div class="top-actions">
-            <button id="newRunBtn" class="reset" title="Registrar corrida e iniciar nova">Novo</button>
+            <button id="newRunBtn" class="reset" title="Registrar corrida e iniciar nova">Nova corrida</button>
             <button id="resetMonthBtn" class="reset danger" title="Apagar dados do mês atual (corridas e abastecimentos)">Zerar mês</button>
-          </div>
-        </div>
-        <div class="topbar-meta" aria-live="polite">
-          <div class="metric-grid">
-            <article class="metric-card">
-              <span class="metric-label">Corridas pagas</span>
-              <div class="metric-main">
-                <strong id="paidCount" class="metric-value">0/4 pagas</strong>
-                <span id="remainingCount" class="metric-sub muted">Faltam 4</span>
-              </div>
-            </article>
-            <article class="metric-card accent">
-              <span class="metric-label">Total recebido</span>
-              <strong id="totalAmount" class="metric-value">R$ 0,00</strong>
-              <span class="metric-sub muted">Valores atualizados automaticamente</span>
-            </article>
-            <article class="metric-card soft">
-              <span class="metric-label">Capacidade do veículo</span>
-              <strong class="metric-value">4 passageiros</strong>
-              <span class="metric-sub muted">+ 1 motorista</span>
-            </article>
           </div>
         </div>
       </div>
@@ -48,7 +26,27 @@
 
     <main class="content">
       <section class="focus-panel">
+        <section class="status">
+          <div class="status-row" aria-live="polite">
+            <div class="status-item">
+              <span class="status-label">Pagamentos</span>
+              <div class="status-values">
+                <strong id="paidCount" class="status-highlight">0/4 pagas</strong>
+                <span id="remainingCount" class="status-secondary">Faltam 4</span>
+              </div>
+            </div>
+            <div class="status-item">
+              <span class="status-label">Total recebido</span>
+              <strong id="totalAmount" class="status-highlight">R$ 0,00</strong>
+            </div>
+          </div>
+        </section>
+
         <section class="car">
+          <header class="car-header">
+            <h2>Assentos da corrida</h2>
+            <p class="muted">Toque para marcar pagamento ou pendência.</p>
+          </header>
           <div class="row front">
             <button class="seat driver" aria-label="Motorista" disabled>Motorista</button>
             <button class="seat unpaid" data-seat="1" aria-pressed="false" aria-label="Assento 1">1</button>
