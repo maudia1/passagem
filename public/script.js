@@ -22,6 +22,7 @@
   } catch {}
 
   const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+  const dateShort = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' });
 
   function computeTotal(method) {
     return method === 'pix' || method === 'dinheiro' ? SEAT_PRICE : 0;
@@ -76,6 +77,8 @@
   const finRevenueEl = document.getElementById('finRevenue');
   const finFuelEl = document.getElementById('finFuel');
   const finNetEl = document.getElementById('finNet');
+  const dailyListEl = document.getElementById('dailyPayments');
+  const dailyTotalEl = document.getElementById('dailyOverallTotal');
   // Fuel DOM
   const fuelForm = document.getElementById('fuelForm');
   const fuelDate = document.getElementById('fuelDate');
@@ -162,6 +165,7 @@
   const RUNS_TABLE = 'corridas';
   const RUN_PAX_TABLE = 'corrida_passagens';
   const RUNS_LOCAL_KEY = 'runs_v1';
+  const DAILY_SUMMARY_KEY = 'dailySummary_v1';
 
   function determinePeriod(date = new Date()) {
     const h = date.getHours();
@@ -172,6 +176,171 @@
     try { const raw = localStorage.getItem(RUNS_LOCAL_KEY); const arr = JSON.parse(raw||'[]'); return Array.isArray(arr)?arr:[] } catch { return [] }
   }
   function saveRunsLocal(list) { localStorage.setItem(RUNS_LOCAL_KEY, JSON.stringify(list)); }
+
+  function loadDailySummaryLocal() {
+    try {
+      const raw = localStorage.getItem(DAILY_SUMMARY_KEY);
+      if (!raw) return {};
+      const obj = JSON.parse(raw);
+      return obj && typeof obj === 'object' ? obj : {};
+    } catch {
+      return {};
+    }
+  }
+
+  function saveDailySummaryLocal(summary) {
+    localStorage.setItem(DAILY_SUMMARY_KEY, JSON.stringify(summary));
+  }
+
+  function startOfLocalDay(date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+
+  function dayKey(date) {
+    const d = new Date(date);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
+  function parseDayKey(key) {
+    const [y, m, d] = key.split('-').map((v) => parseInt(v, 10));
+    return new Date(y || 0, (m || 1) - 1, d || 1);
+  }
+
+  function labelForDay(date) {
+    const todayStart = startOfLocalDay(new Date());
+    const targetStart = startOfLocalDay(date);
+    const diffDays = Math.round((todayStart - targetStart) / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return 'Hoje';
+    if (diffDays === 1) return 'Ontem';
+    const dtf = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+    return dtf.format(targetStart);
+  }
+
+  function increaseDailySummaryLocal(date, seats) {
+    if (!seats || seats.length === 0) return;
+    const summary = loadDailySummaryLocal();
+    const key = dayKey(date);
+    const entry = summary[key] || { pix: 0, dinheiro: 0, total: 0 };
+    seats.forEach((seat) => {
+      const metodo = seat.metodo || seat.pagamento;
+      const value = computeTotal(metodo);
+      if (metodo === 'pix') entry.pix += value;
+      if (metodo === 'dinheiro') entry.dinheiro += value;
+      entry.total += value;
+    });
+    summary[key] = entry;
+    saveDailySummaryLocal(summary);
+  }
+
+  function removeCurrentMonthFromDailySummary() {
+    const summary = loadDailySummaryLocal();
+    const { start } = monthRange(new Date());
+    const startDate = new Date(start);
+    const next = {};
+    for (const key of Object.keys(summary)) {
+      const date = parseDayKey(key);
+      if (date < startDate) {
+        next[key] = summary[key];
+      }
+    }
+    saveDailySummaryLocal(next);
+  }
+
+  function aggregateDaily(records) {
+    const map = new Map();
+    records.forEach((rec) => {
+      if (!rec) return;
+      const metodo = rec.metodo || rec.pagamento;
+      if (metodo !== 'pix' && metodo !== 'dinheiro') return;
+      const quando = rec.quando;
+      if (!quando) return;
+      const d = new Date(quando);
+      const key = dayKey(d);
+      if (!map.has(key)) {
+        map.set(key, { key, date: parseDayKey(key), pix: 0, dinheiro: 0, total: 0 });
+      }
+      const entry = map.get(key);
+      const value = Number(rec.total) || computeTotal(metodo);
+      if (metodo === 'pix') entry.pix += value;
+      else entry.dinheiro += value;
+      entry.total += value;
+    });
+    return Array.from(map.values()).sort((a, b) => b.date - a.date);
+  }
+
+  async function fetchDailyPaymentsSummary() {
+    const { start } = monthRange(new Date());
+    if (sb) {
+      try {
+        const { data, error } = await sb
+          .from(RUN_PAX_TABLE)
+          .select('pagamento, total, corridas!inner(quando)')
+          .gte('corridas.quando', start)
+          .order('corridas.quando', { ascending: false });
+        if (!error && Array.isArray(data)) {
+          const records = data
+            .map((row) => ({
+              pagamento: row.pagamento,
+              total: row.total,
+              quando: row.corridas?.quando || null,
+            }))
+            .filter((row) => row.quando);
+          const aggregated = aggregateDaily(records);
+          if (aggregated.length) return aggregated;
+        }
+      } catch (err) {
+        console.error('Erro ao buscar pagamentos diários (Supabase):', err);
+      }
+    }
+    const localSummary = loadDailySummaryLocal();
+    const startDate = new Date(start);
+    const entries = Object.keys(localSummary)
+      .map((key) => ({
+        key,
+        date: parseDayKey(key),
+        pix: Number(localSummary[key]?.pix) || 0,
+        dinheiro: Number(localSummary[key]?.dinheiro) || 0,
+        total: Number(localSummary[key]?.total) || 0,
+      }))
+      .filter((entry) => entry.date >= startDate);
+    return entries.sort((a, b) => b.date - a.date);
+  }
+
+  async function renderDailyPayments() {
+    if (!dailyListEl) return;
+    const entries = (await fetchDailyPaymentsSummary()).slice(0, 7);
+    dailyListEl.innerHTML = '';
+    if (!entries.length) {
+      const li = document.createElement('li');
+      li.className = 'muted';
+      li.textContent = 'Nenhum pagamento registrado.';
+      dailyListEl.appendChild(li);
+      if (dailyTotalEl) dailyTotalEl.textContent = brl.format(0);
+      return;
+    }
+    let overall = 0;
+    entries.forEach((entry) => {
+      overall += entry.total;
+      const li = document.createElement('li');
+      const dateLabel = document.createElement('div');
+      dateLabel.className = 'daily-row';
+      const humanLabel = labelForDay(entry.date);
+      const formatted = dateShort.format(entry.date);
+      dateLabel.innerHTML = `<strong>${humanLabel}</strong><span class="muted">${formatted}</span>`;
+      const amounts = document.createElement('div');
+      amounts.className = 'daily-amounts';
+      amounts.innerHTML = `
+        <span class="tag">PIX: ${brl.format(entry.pix)}</span>
+        <span class="tag">Dinheiro: ${brl.format(entry.dinheiro)}</span>
+        <span class="tag">Total: ${brl.format(entry.total)}</span>
+      `;
+      li.appendChild(dateLabel);
+      li.appendChild(amounts);
+      dailyListEl.appendChild(li);
+    });
+    if (dailyTotalEl) dailyTotalEl.textContent = brl.format(overall);
+  }
 
   async function insertCorridaSupabase(run) {
     if (!sb) return { ok:false };
@@ -440,6 +609,8 @@
   renderRunsSummary();
   // Resumo financeiro do mês
   renderFinanceSummary();
+  // Resumo diário de pagamentos
+  renderDailyPayments();
 
   seats.forEach((el) => {
     el.addEventListener('click', () => {
@@ -500,10 +671,19 @@
         ok = ok && !!res2.ok;
       }
     }
+    increaseDailySummaryLocal(quando, seatsPaid);
     if (!ok) {
       // fallback local
       const list = loadRunsLocal();
-      list.unshift({ id: `${Date.now()}_${Math.random().toString(36).slice(2,8)}`, quando: quando.toISOString(), periodo, total_assentos: totalSeats, ocupados, total });
+      list.unshift({
+        id: `${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
+        quando: quando.toISOString(),
+        periodo,
+        total_assentos: totalSeats,
+        ocupados,
+        total,
+        pagamentos: seatsPaid.map((s) => ({ metodo: s.metodo, total: computeTotal(s.metodo) })),
+      });
       saveRunsLocal(list);
     }
 
@@ -512,8 +692,9 @@
     save(state);
     render(state);
     await syncAllToSupabase(state);
-      await renderRunsSummary();
-      await renderFinanceSummary();
+    await renderRunsSummary();
+    await renderFinanceSummary();
+    await renderDailyPayments();
   });
 
   // Formulário de abastecimento
@@ -660,6 +841,7 @@
         saveRunsLocal(runs);
         const fuels = loadFuelLocal().filter((f)=> new Date(f.quando) < new Date(start));
         saveFuelLocal(fuels);
+        removeCurrentMonthFromDailySummary();
       } catch {}
       // Assentos: limpa
       state = { ...defaultState };
@@ -671,6 +853,7 @@
       renderFuelList(items); renderFuelSummary(items);
       await renderRunsSummary();
       await renderFinanceSummary();
+      await renderDailyPayments();
     }
 
     if (resetMonthBtn) {
