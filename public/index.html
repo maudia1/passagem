@@ -12,15 +12,22 @@
   </head>
   <body>
     <header class="topbar">
-      <h1>Controle de Passagens</h1>
-      <div class="status" aria-live="polite">
-        <span id="paidCount" class="badge">0/4 pagas</span>
-        <span id="remainingCount" class="muted">Faltam 4</span>
-        <span id="totalAmount" class="badge">R$ 0,00</span>
-      </div>
-      <div class="top-actions">
-        <button id="newRunBtn" class="reset" title="Registrar corrida e iniciar nova">Novo</button>
-        <button id="resetMonthBtn" class="reset danger" title="Apagar dados do mês atual (corridas e abastecimentos)">Zerar mês</button>
+      <div class="topbar-inner">
+        <div class="top-headline">
+          <h1>Controle de Passagens</h1>
+          <p class="muted">Organize corridas, pagamentos e abastecimentos em um painel equilibrado.</p>
+        </div>
+        <div class="topbar-meta">
+          <div class="status" aria-live="polite">
+            <span id="paidCount" class="badge">0/4 pagas</span>
+            <span id="remainingCount" class="muted">Faltam 4</span>
+            <span id="totalAmount" class="badge">R$ 0,00</span>
+          </div>
+          <div class="top-actions">
+            <button id="newRunBtn" class="reset" title="Registrar corrida e iniciar nova">Novo</button>
+            <button id="resetMonthBtn" class="reset danger" title="Apagar dados do mês atual (corridas e abastecimentos)">Zerar mês</button>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -75,11 +82,28 @@
         </section>
 
         <section class="fuel">
-          <h2>Abastecimento</h2>
-          <div class="fuel-summary">
-            <span class="tag" id="fuelSumMonthTotal">R$ 0,00</span>
-            <span class="tag" id="fuelSumMonthLiters">0,00 L</span>
-            <span class="tag" id="fuelSumMonthAvg">R$ 0,00/L</span>
+          <div class="card-header">
+            <div>
+              <h2>Abastecimento</h2>
+              <p class="muted small">Registre cada abastecimento e acompanhe o balanço do mês.</p>
+            </div>
+            <button type="button" id="toggleFuelHistory" class="link-btn" aria-expanded="false" aria-controls="fuelHistory">
+              Ver histórico
+            </button>
+          </div>
+          <div class="fuel-stats">
+            <div class="fuel-stat">
+              <span class="muted">Total no mês</span>
+              <strong id="fuelSumMonthTotal">R$ 0,00</strong>
+            </div>
+            <div class="fuel-stat">
+              <span class="muted">Litros no mês</span>
+              <strong id="fuelSumMonthLiters">0,00 L</strong>
+            </div>
+            <div class="fuel-stat">
+              <span class="muted">Preço médio</span>
+              <strong id="fuelSumMonthAvg">R$ 0,00/L</strong>
+            </div>
           </div>
           <form id="fuelForm" class="fuel-form">
             <div class="fuel-grid">
@@ -111,9 +135,11 @@
               <button class="action save" type="submit">Registrar</button>
             </div>
           </form>
-
-          <div class="fuel-list">
-            <h3>Últimos abastecimentos</h3>
+          <div id="fuelHistory" class="fuel-history hidden" aria-live="polite">
+            <div class="fuel-history-header">
+              <h3>Histórico de abastecimentos</h3>
+              <p class="muted small">Visualize, edite ou exclua lançamentos anteriores.</p>
+            </div>
             <ul id="fuelList" class="fuel-items">
               <li class="muted">Nenhum registro ainda.</li>
             </ul>
