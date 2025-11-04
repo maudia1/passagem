@@ -87,6 +87,8 @@
   const fuelType = document.getElementById('fuelType');
   const fuelNotes = document.getElementById('fuelNotes');
   const fuelList = document.getElementById('fuelList');
+  const fuelHistory = document.getElementById('fuelHistory');
+  const fuelHistoryToggle = document.getElementById('toggleFuelHistory');
   const fuelSumMonthTotal = document.getElementById('fuelSumMonthTotal');
   const fuelSumMonthLiters = document.getElementById('fuelSumMonthLiters');
   const fuelSumMonthAvg = document.getElementById('fuelSumMonthAvg');
@@ -699,6 +701,23 @@
 
   // Formulário de abastecimento
   if (fuelForm) {
+    if (fuelHistory && fuelHistoryToggle) {
+      const updateFuelToggle = (expanded) => {
+        fuelHistoryToggle.setAttribute('aria-expanded', String(expanded));
+        fuelHistoryToggle.textContent = expanded ? 'Ocultar histórico' : 'Ver histórico';
+      };
+      updateFuelToggle(false);
+      fuelHistoryToggle.addEventListener('click', () => {
+        const shouldShow = fuelHistory.classList.contains('hidden');
+        if (shouldShow) {
+          fuelHistory.classList.remove('hidden');
+          updateFuelToggle(true);
+        } else {
+          fuelHistory.classList.add('hidden');
+          updateFuelToggle(false);
+        }
+      });
+    }
     if (fuelDate && !fuelDate.value) {
       fuelDate.value = toLocalInput(new Date());
     }
@@ -753,79 +772,80 @@
     })();
 
     // Delegação de eventos para editar/excluir
-    fuelList.addEventListener('click', async (ev) => {
-      const btn = ev.target.closest('button');
-      if (!btn) return;
-      const li = btn.closest('li');
-      if (!li || !li.dataset.id) return;
-      const id = li.dataset.id;
-      const action = btn.getAttribute('data-action');
-      if (action === 'delete') {
-        if (!confirm('Excluir este abastecimento?')) return;
-        let ok = false;
-        if (sb) { const res = await deleteFuelSupabase(id); ok = !!res.ok; }
-        if (!ok) {
-          const list = loadFuelLocal().filter((it) => String(it.id) !== String(id));
-          saveFuelLocal(list);
-        }
-        let items = null; if (sb) items = await fetchFuelFromSupabase(); if (!items) items = loadFuelLocal();
-        renderFuelList(items); renderFuelSummary(items); await renderFinanceSummary();
-      }
-      if (action === 'edit') {
-        // Renderiza modo edição inline
-        const nowItems = fuelList.querySelectorAll('li');
-        // encontra item atual (supabase/local)
-        let current = null;
-        let source = [];
-        if (sb) { const fetched = await fetchFuelFromSupabase(); if (fetched) source = fetched; }
-        if (!source.length) source = loadFuelLocal();
-        current = source.find((x) => String(x.id) === String(id));
-        if (!current) return;
-        const d = new Date(current.quando);
-        li.innerHTML = `
-          <div class="fuel-edit">
-            <input type="datetime-local" class="e-when" value="${toLocalInput(d)}" />
-            <input type="number" step="0.01" min="0" class="e-litros" value="${Number(current.litros)}" />
-            <input type="number" step="0.01" min="0" class="e-total" value="${Number(current.total)}" />
-            <select class="e-tipo">
-              <option value="gasolina" ${current.tipo === 'gasolina' ? 'selected' : ''}>Gasolina</option>
-              <option value="etanol" ${current.tipo === 'etanol' ? 'selected' : ''}>Etanol</option>
-            </select>
-            <div class="row2">
-              <input type="text" class="e-obs" placeholder="Observação" value="${current.obs || ''}" />
-            </div>
-            <div class="actions">
-              <button class="btn-text e-cancel">Cancelar</button>
-              <button class="btn-text e-save">Salvar</button>
-            </div>
-          </div>
-        `;
-        li.querySelector('.e-cancel').addEventListener('click', async () => {
-          let items = null; if (sb) items = await fetchFuelFromSupabase(); if (!items) items = loadFuelLocal();
-          renderFuelList(items); renderFuelSummary(items); await renderFinanceSummary();
-        });
-        li.querySelector('.e-save').addEventListener('click', async () => {
-          const q = li.querySelector('.e-when').value;
-          const litros = parseFloat(li.querySelector('.e-litros').value);
-          const total = parseFloat(li.querySelector('.e-total').value);
-          const tipo = li.querySelector('.e-tipo').value;
-          const obs = li.querySelector('.e-obs').value.trim();
-          if (!(litros > 0) || !(total > 0)) { alert('Litros e total devem ser > 0'); return; }
+    if (fuelList) {
+      fuelList.addEventListener('click', async (ev) => {
+        const btn = ev.target.closest('button');
+        if (!btn) return;
+        const li = btn.closest('li');
+        if (!li || !li.dataset.id) return;
+        const id = li.dataset.id;
+        const action = btn.getAttribute('data-action');
+        if (action === 'delete') {
+          if (!confirm('Excluir este abastecimento?')) return;
           let ok = false;
-          if (sb) {
-            const res = await updateFuelSupabase(id, { quando: new Date(q).toISOString(), litros, total, tipo: tipo||null, obs: obs||null, preco_litro: litros>0? total/litros : null });
-            ok = !!res.ok;
-          }
+          if (sb) { const res = await deleteFuelSupabase(id); ok = !!res.ok; }
           if (!ok) {
-            const list = loadFuelLocal().map((it) => String(it.id) === String(id) ? { ...it, quando: new Date(q).toISOString(), litros, total, tipo, obs } : it);
+            const list = loadFuelLocal().filter((it) => String(it.id) !== String(id));
             saveFuelLocal(list);
           }
           let items = null; if (sb) items = await fetchFuelFromSupabase(); if (!items) items = loadFuelLocal();
-          renderFuelList(items); renderFuelSummary(items);
-        });
-      }
-    });
+          renderFuelList(items); renderFuelSummary(items); await renderFinanceSummary();
+        }
+        if (action === 'edit') {
+          // Renderiza modo edição inline
+          // encontra item atual (supabase/local)
+          let current = null;
+          let source = [];
+          if (sb) { const fetched = await fetchFuelFromSupabase(); if (fetched) source = fetched; }
+          if (!source.length) source = loadFuelLocal();
+          current = source.find((x) => String(x.id) === String(id));
+          if (!current) return;
+          const d = new Date(current.quando);
+          li.innerHTML = `
+            <div class="fuel-edit">
+              <input type="datetime-local" class="e-when" value="${toLocalInput(d)}" />
+              <input type="number" step="0.01" min="0" class="e-litros" value="${Number(current.litros)}" />
+              <input type="number" step="0.01" min="0" class="e-total" value="${Number(current.total)}" />
+              <select class="e-tipo">
+                <option value="gasolina" ${current.tipo === 'gasolina' ? 'selected' : ''}>Gasolina</option>
+                <option value="etanol" ${current.tipo === 'etanol' ? 'selected' : ''}>Etanol</option>
+              </select>
+              <div class="row2">
+                <input type="text" class="e-obs" placeholder="Observação" value="${current.obs || ''}" />
+              </div>
+              <div class="actions">
+                <button class="btn-text e-cancel">Cancelar</button>
+                <button class="btn-text e-save">Salvar</button>
+              </div>
+            </div>
+          `;
+          li.querySelector('.e-cancel').addEventListener('click', async () => {
+            let items = null; if (sb) items = await fetchFuelFromSupabase(); if (!items) items = loadFuelLocal();
+            renderFuelList(items); renderFuelSummary(items); await renderFinanceSummary();
+          });
+          li.querySelector('.e-save').addEventListener('click', async () => {
+            const q = li.querySelector('.e-when').value;
+            const litros = parseFloat(li.querySelector('.e-litros').value);
+            const total = parseFloat(li.querySelector('.e-total').value);
+            const tipo = li.querySelector('.e-tipo').value;
+            const obs = li.querySelector('.e-obs').value.trim();
+            if (!(litros > 0) || !(total > 0)) { alert('Litros e total devem ser > 0'); return; }
+            let ok = false;
+            if (sb) {
+              const res = await updateFuelSupabase(id, { quando: new Date(q).toISOString(), litros, total, tipo: tipo||null, obs: obs||null, preco_litro: litros>0? total/litros : null });
+              ok = !!res.ok;
+            }
+            if (!ok) {
+              const list = loadFuelLocal().map((it) => String(it.id) === String(id) ? { ...it, quando: new Date(q).toISOString(), litros, total, tipo, obs } : it);
+              saveFuelLocal(list);
+            }
+            let items = null; if (sb) items = await fetchFuelFromSupabase(); if (!items) items = loadFuelLocal();
+            renderFuelList(items); renderFuelSummary(items);
+          });
+        }
+      });
     }
+  }
 
     // ===== Zerar mês atual (corridas + abastecimentos + assentos) =====
     async function resetCurrentMonth() {
